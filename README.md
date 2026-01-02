@@ -8,8 +8,10 @@ This version marks the completion of the containerized core services before the 
 ### Tech Stack
 * **Java 21**: Leveraging Virtual Threads and modern language features.
 * **Spring Boot 3.2+**: Core framework for microservices.
+* **Spring WebFlux**: Reactive web stack for non-blocking services.
 * **Docker & Docker Compose**: Orchestrating multi-container deployments.
 * **MySQL**: Per-service isolated databases to ensure data sovereignty.
+* **PostgreSQL**: Robust relational database for persistent storage.
 
 ## 🏗️ Architecture
 The system is divided into independent services:
