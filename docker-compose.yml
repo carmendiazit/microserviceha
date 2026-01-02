@@ -1,4 +1,3 @@
-version: '3'
 services:
   ### Posgres database for Inventory
   db-inventory:
@@ -44,3 +43,46 @@ services:
     expose:
       - 5432
     command: -p 5432
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: inventory-service/Dockerfile
+    container_name: inventory-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-inventory:5431/ms_inventory
+      - SPRING_DATASOURCE_USERNAME=carmecha
+      - SPRING_DATASOURCE_PASSWORD=Test123
+    depends_on:
+      - db-inventory
+
+  order-service:
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
+    container_name: order-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-orders:3306/ms_orders
+      - SPRING_DATASOURCE_USERNAME=carmecha
+      - SPRING_DATASOURCE_PASSWORD=Test123
+      - SPRING_THREADS_VIRTUAL_ENABLED=true # Habilitar Virtual Threads
+    depends_on:
+      - db-orders
+
+  product-service:
+    build:
+      context: .
+      dockerfile: product-service/Dockerfile
+    container_name: product-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-products:5432/ms_products
+      - SPRING_DATASOURCE_USERNAME=carmecha
+      - SPRING_DATASOURCE_PASSWORD=Test123
+    depends_on:
+      - db-products
