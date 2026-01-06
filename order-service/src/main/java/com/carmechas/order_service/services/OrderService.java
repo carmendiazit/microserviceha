@@ -22,7 +22,7 @@ public class OrderService {
         //Check inventory
         BaseResponse result = this.webClient.build()
                 .post()
-                .uri("http://inventory-service:8083/api/inventory/in-stock")
+                .uri("lb://inventory-service/api/inventory/in-stock")
                 .bodyValue(orderRequest.getOrderItems())
                 .retrieve()
                 .bodyToMono(BaseResponse.class)

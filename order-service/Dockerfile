@@ -3,6 +3,8 @@ WORKDIR /app
 
 # Copiamos el POM padre y todos los módulos para que Maven pueda validar la estructura
 COPY pom.xml .
+COPY discovery-server/pom.xml discovery-server/
+COPY api-gateway/pom.xml api-gateway/
 COPY inventory-service ./inventory-service
 COPY order-service ./order-service
 COPY product-service ./product-service
@@ -12,5 +14,5 @@ RUN mvn clean package -Dmaven.test.skip=true -pl order-service -am
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/order-service/target/*.jar app.jar
-EXPOSE 8082
+EXPOSE 0
 ENTRYPOINT ["java", "-jar", "app.jar"]

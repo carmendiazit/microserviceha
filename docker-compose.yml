@@ -1,5 +1,5 @@
 services:
-  ### Posgres database for Inventory
+  ### PostgreSQL database for Inventory
   db-inventory:
     container_name: db-inventory
     image: postgres:15.2
@@ -9,10 +9,19 @@ services:
       POSTGRES_USER: carmecha
       POSTGRES_PASSWORD: Test123
     ports:
-      - 5431:5431
+      - "5431:5431"
     expose:
       - 5431
     command: -p 5431
+    volumes:
+      - postgres-inventory-data:/var/lib/postgresql/data
+    networks:
+      - microserviceha-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carmecha -d ms_inventory -p 5431"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ### MySQL database for Orders
   db-orders:
@@ -25,11 +34,20 @@ services:
       MYSQL_PASSWORD: Test123
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - 3306:3306
+      - "3306:3306"
     expose:
       - 3306
+    volumes:
+      - mysql-orders-data:/var/lib/mysql
+    networks:
+      - microserviceha-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  ### Posgres database for Products
+  ### PostgreSQL database for Products
   db-products:
     container_name: db-products
     image: postgres:15.2
@@ -39,50 +57,160 @@ services:
       POSTGRES_USER: carmecha
       POSTGRES_PASSWORD: Test123
     ports:
-      - 5432:5432
+      - "5432:5432"
     expose:
       - 5432
     command: -p 5432
+    volumes:
+      - postgres-products-data:/var/lib/postgresql/data
+    networks:
+      - microserviceha-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carmecha -d ms_products -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  ### Inventory Service
   inventory-service:
     build:
       context: .
       dockerfile: inventory-service/Dockerfile
-    container_name: inventory-service
-    ports:
-      - "8083:8083"
+
     environment:
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db-inventory:5431/ms_inventory
       - SPRING_DATASOURCE_USERNAME=carmecha
       - SPRING_DATASOURCE_PASSWORD=Test123
-    depends_on:
-      - db-inventory
+      - JAVA_OPTS=-Xmx512m -Xms256m
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
 
+    depends_on:
+      db-inventory:
+        condition: service_healthy
+    networks:
+      - microserviceha-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  ### Order Service
   order-service:
     build:
       context: .
       dockerfile: order-service/Dockerfile
-    container_name: order-service
-    ports:
-      - "8082:8082"
+   
+
     environment:
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://db-orders:3306/ms_orders
       - SPRING_DATASOURCE_USERNAME=carmecha
       - SPRING_DATASOURCE_PASSWORD=Test123
-      - SPRING_THREADS_VIRTUAL_ENABLED=true # Habilitar Virtual Threads
-    depends_on:
-      - db-orders
+      - SPRING_THREADS_VIRTUAL_ENABLED=true
+      - JAVA_OPTS=-Xmx512m -Xms256m
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
 
+    depends_on:
+      db-orders:
+        condition: service_healthy
+    networks:
+      - microserviceha-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  ### Product Service
   product-service:
     build:
       context: .
       dockerfile: product-service/Dockerfile
-    container_name: product-service
-    ports:
-      - "8081:8081"
+
     environment:
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db-products:5432/ms_products
       - SPRING_DATASOURCE_USERNAME=carmecha
       - SPRING_DATASOURCE_PASSWORD=Test123
+      - JAVA_OPTS=-Xmx512m -Xms256m
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
     depends_on:
-      - db-products
+      db-products:
+        condition: service_healthy
+    networks:
+      - microserviceha-network
+    restart: unless-stopped
+
+
+  ### API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8080
+      - INVENTORY_SERVICE_URL=lb://INVENTORY-SERVICE
+      - ORDER_SERVICE_URL=lb://ORDER-SERVICE
+      - PRODUCT_SERVICE_URL=lb://PRODUCT-SERVICE
+      - JAVA_OPTS=-Xmx512m -Xms256m
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    depends_on:
+      inventory-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+    networks:
+      - microserviceha-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  discovery-server:
+    build:
+      context: .
+      dockerfile: discovery-server/Dockerfile
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    networks:
+      - microserviceha-network
+
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
+      interval: 10s
+      retries: 5
+
+# SECCIÓN DE NETWORKS - IMPORTANTE
+networks:
+  microserviceha-network:
+    driver: bridge
+    name: microserviceha-network
+
+# SECCIÓN DE VOLUMES - IMPORTANTE
+volumes:
+  postgres-inventory-data:
+    driver: local
+  postgres-products-data:
+    driver: local
+  mysql-orders-data:
+    driver: local

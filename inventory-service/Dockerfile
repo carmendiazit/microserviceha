@@ -4,6 +4,8 @@ WORKDIR /app
   
   # Copiamos el pom padre y el código del servicio
 COPY pom.xml .
+COPY discovery-server/pom.xml discovery-server/
+COPY api-gateway/pom.xml api-gateway/
 COPY inventory-service ./inventory-service
 COPY order-service ./order-service
 COPY product-service ./product-service
@@ -15,5 +17,5 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/inventory-service/target/*.jar app.jar
 
-EXPOSE 8083
+EXPOSE 0
 ENTRYPOINT ["java", "-jar", "app.jar"]
