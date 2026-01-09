@@ -1,4 +1,4 @@
-package com.carmchas.discovery_server;
+package com.carmechas.discovery_server;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
