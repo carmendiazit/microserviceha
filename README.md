@@ -79,7 +79,7 @@ The system implements a "Defense in Depth" strategy to ensure high availability 
 * **1. Producer Side** (Order-Service)
    * **Circuit Breaker**: Protects the system from cascading failures if the Inventory-Service is down. It uses a Count-Based Sliding Window (size: 5). If the failure rate exceeds 50%, the circuit opens for 10 seconds.
 
-   *  **Fallback Mechanism**: Instead of a 500 error, the system returns a controlled response (e.g., "Order Pending/Review") to maintain a smooth user experience.
+   *  **Fallback Mechanism**: Instead of a 500 error, the system returns a controlled response to maintain a smooth user experience.
 
 * **2. Consumer Side** (Notification-Service)
    * **Exponential Backoff Retry**: When an external notification (Email/SMS API) fails or experiences latency, the service retries with increasing wait times (2s, 4s, 8s).
@@ -114,11 +114,11 @@ chmod +x chaos-script.sh
 3. * **Observe:** Watch the Circuit Breaker state transition from CLOSED to OPEN and then HALF_OPEN automatically.
 
 4. * **Monitoring Kafka Events:**
-# Monitor the main orders flow
+ Monitor the main orders flow
 ```bash
 docker exec -it kafka kafka-console-consumer --topic orders-topic --from-beginning --bootstrap-server localhost:9092
 ```
-# Monitor failed messages (DLQ) for auditing
+ Monitor failed messages (DLQ) for auditing
 ```bash
 docker exec -it kafka kafka-console-consumer --topic orders-topic-failed --from-beginning --bootstrap-server localhost:9092
 ```
