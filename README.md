@@ -109,7 +109,7 @@ chmod +x chaos-script.sh
 
 * *Stress Test*: Send POST requests to /api/order-service.
 
-* *Observe**: Check logs (docker logs -f notification-service) to see the Retry mechanism and the Virtual Threads handling the 10s simulated latency.
+* *Observe*: Check logs (docker logs -f notification-service) to see the Retry mechanism and the Virtual Threads handling the 10s simulated latency.
 
 3. * **Observe:** Watch the Circuit Breaker state transition from CLOSED to OPEN and then HALF_OPEN automatically.
 
