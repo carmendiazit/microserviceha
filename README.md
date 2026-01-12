@@ -1,4 +1,4 @@
-🛒 * **Microservices E-Commerce System**
+###🛒  Microservices E-Commerce System
 A robust, production-ready microservices architecture built with Spring Boot 3.2+ and Java 21 (LTS). This project implements modern distributed systems patterns such as API Gateway, Service Discovery, and advanced Resilience patterns.
 
 ### Tech Stack
