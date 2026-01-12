@@ -9,6 +9,7 @@ COPY api-gateway/pom.xml api-gateway/
 COPY inventory-service ./inventory-service
 COPY order-service ./order-service
 COPY product-service ./product-service
+COPY notification-service/pom.xml notification-service/
 
   # Instalamos solo las dependencias necesarias y compilamos el módulo
 RUN mvn clean package -Dmaven.test.skip=true -pl inventory-service -am

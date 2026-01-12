@@ -1,0 +1,12 @@
+
+docker exec -it kafka kafka-console-consumer --topic orders-topic --from-beginning --bootstrap-server localhost:9092
+
+docker exec -it kafka kafka-consumer-groups --bootstrap-server localhost:9092 --group notification-service --describe
+
+docker exec -it kafka kafka-console-consumer --topic orders-topic-failed --from-beginning --bootstrap-server localhost:9092
+
+docker exec -it kafka kafka-consumer-groups --bootstrap-server localhost:9092 --group notification-group-failed --describe
+
+
+
+

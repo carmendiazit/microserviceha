@@ -1,10 +1,14 @@
 package com.carmechas.order_service.services;
 
+import com.carmechas.order_service.events.OrderEvent;
 import com.carmechas.order_service.model.dtos.*;
 import com.carmechas.order_service.model.entities.Order;
 import com.carmechas.order_service.model.entities.OrderItem;
+import com.carmechas.order_service.model.enums.OrderStatus;
 import com.carmechas.order_service.repositories.OrderRepository;
+import com.carmechas.order_service.utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -16,6 +20,7 @@ import java.util.UUID;
 public class OrderService {
     private final OrderRepository orderRepository;
     private final WebClient.Builder webClient;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     public OrderResponse placeOrder(OrderRequest orderRequest) {
 
@@ -35,8 +40,13 @@ public class OrderService {
                     .map(orderItemRequest -> mapOrderItemRequestToOrderItem(orderItemRequest, order))
                     .toList());
             var savedOrder = this.orderRepository.save(order);
+
+            this.kafkaTemplate.send("orders-topic",
+                    JsonUtils.toJson(new OrderEvent(savedOrder.getOrderNumber(),savedOrder.getOrderItems().size(), OrderStatus.PLACED)));
+
             return mapToOrderResponse(savedOrder);
         }else {
+            //TODO might use another queue for handling lack of products.
             throw new IllegalArgumentException("Some of products are not in stock");
         }
     }

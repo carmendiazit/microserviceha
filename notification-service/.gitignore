@@ -31,11 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-# Custom env files
-.env
-*.env
-
-### Qodana ###
-.qodana/
-qodana.yaml

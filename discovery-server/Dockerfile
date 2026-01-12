@@ -8,6 +8,7 @@ COPY api-gateway ./api-gateway
 COPY inventory-service ./inventory-service
 COPY order-service ./order-service
 COPY product-service ./product-service
+COPY notification-service/pom.xml notification-service/
 
 RUN mvn clean package -Dmaven.test.skip=true -pl discovery-server -am
 

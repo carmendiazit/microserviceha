@@ -152,10 +152,9 @@ services:
     build:
       context: .
       dockerfile: order-service/Dockerfile
-
-
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - SPRING_DATASOURCE_URL=jdbc:mysql://db-orders:3306/ms_orders
       - SPRING_DATASOURCE_USERNAME=carmecha
       - SPRING_DATASOURCE_PASSWORD=Test123
@@ -163,7 +162,6 @@ services:
       - JAVA_OPTS=-Xmx512m -Xms256m
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:password@discovery-server:8761/eureka/
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-
     depends_on:
       db-orders:
         condition: service_healthy
@@ -182,7 +180,6 @@ services:
     build:
       context: .
       dockerfile: product-service/Dockerfile
-
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db-products:5432/ms_products
@@ -194,6 +191,25 @@ services:
     depends_on:
       db-products:
         condition: service_healthy
+    networks:
+      - microserviceha-network
+    restart: unless-stopped
+
+  notification-service:
+    build:
+     context: .
+     dockerfile: notification-service/Dockerfile
+    environment:
+       - SPRING_PROFILES_ACTIVE=docker
+       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+       - JAVA_OPTS=-Xmx512m -Xms256m
+       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:password@discovery-server:8761/eureka/
+       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    depends_on:
+     kafka:
+       condition: service_started
+     discovery-server:
+      condition: service_healthy
     networks:
       - microserviceha-network
     restart: unless-stopped
@@ -228,6 +244,8 @@ services:
         condition: service_started
       product-service:
         condition: service_started
+      notification-service:
+        condition: service_started
     networks:
       - microserviceha-network
     restart: unless-stopped
@@ -251,11 +269,39 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
     networks:
       - microserviceha-network
-
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
       interval: 10s
       retries: 5
+
+  ### Zookeeper
+  zookeeper:
+    image: zookeeper:latest
+    container_name: zookeeper
+    environment:
+     ZOO_TICK_TIME: 2000
+     ZOO_CLIENT_PORT: 2181
+    networks:
+     - microserviceha-network
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    networks:
+      - microserviceha-network
+
 
 # SECCIÓN DE NETWORKS - IMPORTANTE
 networks:

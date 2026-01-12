@@ -12,6 +12,7 @@ COPY api-gateway/pom.xml api-gateway/
 COPY inventory-service/pom.xml inventory-service/
 COPY order-service/pom.xml order-service/
 COPY product-service/pom.xml product-service/
+COPY notification-service/pom.xml notification-service/
 
 # 3. Descargar dependencias (ahora Maven ve todos los módulos y no falla)
 RUN mvn dependency:go-offline -B -pl api-gateway -am
