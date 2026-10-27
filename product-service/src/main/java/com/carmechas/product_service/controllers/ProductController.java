@@ -24,7 +24,7 @@ public class ProductController {
         this.productService.addProduct(productRequest);
     }
     @GetMapping
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.ACCEPTED)
     @PreAuthorize("hasRole('USER')")
     public List<ProductResponse> getAllProduct(){
        return this.productService.getAllProducts();
